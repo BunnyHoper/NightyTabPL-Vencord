@@ -101,9 +101,9 @@ Need your own pages next to Nighty (a bot panel, a dashboard, any website)? Use 
 
 ## 💖 ᴄʀᴇᴅɪᴛѕ
 
-<a href="https://github.com/mimiez"><img src="assets/mimiez.png" width="96" height="96" alt="Mimiez" /></a>
+<a href="https://github.com/xMimiez"><img src="assets/xmimiez.jpg" width="96" height="96" alt="xMimiez" /></a>
 
-Huge thanks to **[Mimiez](https://github.com/mimiez)** (Mime | N0_.q3) — the original author of the Nighty Tab plugin this fork is built on. 🙏
+Huge thanks to **[xMimiez](https://github.com/xMimiez)** (Mime | N0_.q3) — the original author of the Nighty Tab plugin this fork is built on. 🙏
 
 ---
 

@@ -347,7 +347,7 @@ export default definePlugin({
     name: "Nighty Tab",
     description: "Adds a Nighty tab on the home sidebar.",
     authors: [
-        { name: "Mimiez", id: 0n },
+        { name: "xMimiez", id: 0n },
         { name: "BunnyHoper", id: 0n }
     ],
     enabledByDefault: true,
