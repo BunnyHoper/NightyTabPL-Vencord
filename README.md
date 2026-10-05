@@ -1,4 +1,4 @@
-# 🌙 ɴɪɢʜᴛʏ ᴛᴀʙ - ᴠᴇɴᴄᴏʀᴅ ᴘʟᴜɢɪɴ
+# 🌙 ɴɪɢʜᴛʏᴛᴀʙᴘʟ-ᴠᴇɴᴄᴏʀᴅ
 [![GitHub repo](https://img.shields.io/badge/github-BunnyHoper-blue?style=for-the-badge&logo=github)](https://github.com/BunnyHoper)
 [![Client Mod](https://img.shields.io/badge/Client%20Mod-Vencord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://github.com/Vendicated/Vencord)
 [![Version](https://img.shields.io/badge/ver-1.0.0-red?style=for-the-badge)](https://github.com/BunnyHoper/Nighty-Tab-Plugin)
