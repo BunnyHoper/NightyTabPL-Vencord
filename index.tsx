@@ -9,7 +9,6 @@ import "./style.css";
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { definePluginSettings, migratePluginSettings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { EquicordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
@@ -31,8 +30,8 @@ const settings = definePluginSettings({
     url: {
         type: OptionType.STRING,
         description: "URL the Nighty tab opens in the page beside the home sidebar.",
-        placeholder: "https://",
-        default: "",
+        placeholder: "http://127.0.0.1/",
+        default: "http://127.0.0.1/",
         isValid(value: string) {
             const trimmed = value.trim();
             if (trimmed === "") return true;

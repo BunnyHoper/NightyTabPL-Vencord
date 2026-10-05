@@ -4,12 +4,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { addResponseHeaderHook } from "@main/csp";
+import { addResponseHeaderHook, CspPolicies } from "@main/csp";
 import { IpcMainInvokeEvent } from "electron";
 
 const MONTH_SECONDS = 60 * 60 * 24 * 30;
 const embedHosts = new Set<string>();
 let headerHooked = false;
+
+// Discord's CSP has no frame-src for local hosts, so the iframe gets blocked.
+// Applied to the main frame on load: a custom URL needs one Ctrl+R after it is set.
+function allowFrameSrc(source: string) {
+    const directives = CspPolicies[source] ?? [];
+    if (!directives.includes("frame-src")) CspPolicies[source] = [...directives, "frame-src"];
+}
+
+for (const source of ["http://127.0.0.1:*", "http://localhost:*"])
+    allowFrameSrc(source);
 
 function hostOf(url: string) {
     try {
@@ -62,6 +72,9 @@ function hookHeaders() {
 
 export function allowEmbed(_event: IpcMainInvokeEvent, url: string) {
     const host = hostOf(url);
-    if (host !== "") embedHosts.add(host);
+    if (host !== "") {
+        embedHosts.add(host);
+        allowFrameSrc(new URL(url).origin);
+    }
     hookHeaders();
 }
