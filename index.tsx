@@ -7,6 +7,7 @@
 import "./style.css";
 
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { addServerListElement, removeServerListElement, ServerListRenderPosition } from "@api/ServerList";
 import { definePluginSettings, migratePluginSettings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classNameFactory } from "@utils/css";
@@ -15,7 +16,7 @@ import { classes } from "@utils/misc";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { Message } from "@vencord/discord-types";
 import { findByCodeLazy, findComponentByCodeLazy } from "@webpack";
-import { ChannelStore, Menu, MessageActions, useEffect, useRef } from "@webpack/common";
+import { ChannelStore, Menu, MessageActions, NavigationRouter, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { ReactElement } from "react";
 
 const Native = IS_DISCORD_DESKTOP
@@ -25,6 +26,8 @@ const Native = IS_DISCORD_DESKTOP
 const NIGHTY_ROUTE = "/nighty";
 const NIGHTY_ITEM_ID = "nighty";
 const cl = classNameFactory("vc-extraHomeTab-");
+// On <body> while the Nighty page is open in server mode: un-highlights Discord's Home icon.
+const ACTIVE_SERVER_CLASS = cl("server-active");
 
 const settings = definePluginSettings({
     url: {
@@ -41,6 +44,12 @@ const settings = definePluginSettings({
             } catch { /* invalid URL */ }
             return "Use an http or https URL";
         }
+    },
+    asServer: {
+        type: OptionType.BOOLEAN,
+        description: "Shows Nighty as a server icon at the top of the server list and opens it full width, like a whole server.",
+        displayName: "Show as server",
+        default: false
     },
     keepLoaded: {
         type: OptionType.BOOLEAN,
@@ -232,13 +241,32 @@ const NightyPage = ErrorBoundary.wrap(function NightyPage() {
         // Follows the anchor every frame: sidebar/window changes move it without resizing it.
         const place = () => {
             const r = anchor.getBoundingClientRect();
-            const next = `${r.top},${r.left},${r.width},${r.height}`;
+            let { left } = r;
+            let clip = "";
+
+            // Server mode: also cover the DM column, leaving a hole for the user panel.
+            if (settings.store.asServer) {
+                const content = anchor.parentElement?.parentElement;
+                const list = content?.querySelector("[class*='sidebarList_']");
+                if (list) left = list.getBoundingClientRect().left;
+                const panel = content?.querySelector("section[class*='panels_']")?.getBoundingClientRect();
+                if (panel && panel.right > left) {
+                    const w = r.right - left, h = r.height;
+                    const x1 = Math.max(0, panel.left - left), x2 = panel.right - left;
+                    const y1 = panel.top - r.top, y2 = panel.bottom - r.top;
+                    clip = `path(evenodd, "M0 0H${w}V${h}H0Z M${x1} ${y1}H${x2}V${y2}H${x1}Z")`;
+                }
+            }
+
+            const width = r.right - left;
+            const next = `${r.top},${left},${width},${r.height},${clip}`;
             if (next !== last) {
                 last = next;
                 layer.style.top = `${r.top}px`;
-                layer.style.left = `${r.left}px`;
-                layer.style.width = `${r.width}px`;
+                layer.style.left = `${left}px`;
+                layer.style.width = `${width}px`;
                 layer.style.height = `${r.height}px`;
+                layer.style.clipPath = clip;
             }
             raf = requestAnimationFrame(place);
         };
@@ -249,12 +277,14 @@ const NightyPage = ErrorBoundary.wrap(function NightyPage() {
             loadFrame(src);
             place();
             layer.hidden = false;
+            document.body.classList.toggle(ACTIVE_SERVER_CLASS, settings.store.asServer);
         })();
 
         return () => {
             cancelled = true;
             cancelAnimationFrame(raf);
             layer.hidden = true;
+            document.body.classList.remove(ACTIVE_SERVER_CLASS);
             if (!settings.store.keepLoaded) dropFrame();
         };
     }, [src]);
@@ -262,8 +292,25 @@ const NightyPage = ErrorBoundary.wrap(function NightyPage() {
     return <div className={cl("page")} ref={anchorRef} />;
 }, { noop: true });
 
+// Discord's router doesn't re-render these items on navigation, so poll the path.
+function useOnNightyRoute() {
+    const check = () => window.location.pathname.startsWith(NIGHTY_ROUTE);
+    const [active, setActive] = useState(check);
+
+    useEffect(() => {
+        const id = setInterval(() => setActive(check()), 250);
+        return () => clearInterval(id);
+    }, []);
+
+    return active;
+}
+
 const NightyTab = ErrorBoundary.wrap(function NightyTab() {
     const listItem = usePrivateChannelListItem(NIGHTY_ITEM_ID);
+    const selected = useOnNightyRoute();
+    const { asServer } = settings.use(["asServer"]);
+
+    if (asServer) return null;
 
     return (
         <PrivateChannelLink
@@ -271,9 +318,34 @@ const NightyTab = ErrorBoundary.wrap(function NightyTab() {
             data-nighty-tab="true"
             icon={NightyIcon}
             route={NIGHTY_ROUTE}
-            selected={window.location.pathname.startsWith(NIGHTY_ROUTE)}
+            selected={selected}
             text="Nighty Tab"
         />
+    );
+}, { noop: true });
+
+const NightyServerIcon = ErrorBoundary.wrap(function NightyServerIcon() {
+    const selected = useOnNightyRoute();
+    const { asServer } = settings.use(["asServer"]);
+
+    if (!asServer) return null;
+
+    return (
+        <div className={classes(cl("server"), selected && cl("server-selected"))}>
+            <span className={cl("server-pill")} />
+            <Tooltip text="Nighty" position="right">
+                {tooltipProps => (
+                    <button
+                        {...tooltipProps}
+                        aria-label="Nighty"
+                        className={cl("server-icon")}
+                        onClick={() => NavigationRouter.transitionTo(NIGHTY_ROUTE)}
+                    >
+                        <img alt="" draggable={false} src={NIGHTY_ICON} />
+                    </button>
+                )}
+            </Tooltip>
+        </div>
     );
 }, { noop: true });
 
@@ -287,7 +359,7 @@ export default definePlugin({
         }
 	],
     enabledByDefault: true,
-    dependencies: ["MessagePopoverAPI"],
+    dependencies: ["MessagePopoverAPI", "ServerListAPI"],
     settings,
     contextMenus: {
         message: messageContextMenuPatch
@@ -311,9 +383,11 @@ export default definePlugin({
     start() {
         const src = pageUrl(settings.store.url);
         if (Native && src !== null) void Native.allowEmbed(src);
+        addServerListElement(ServerListRenderPosition.Above, NightyServerIcon);
     },
 
     stop() {
+        removeServerListElement(ServerListRenderPosition.Above, NightyServerIcon);
         destroyKeeper();
     },
 

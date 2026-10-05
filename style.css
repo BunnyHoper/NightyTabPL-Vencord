@@ -7,7 +7,8 @@
 
 .vc-extraHomeTab-keeper {
     position: fixed;
-    z-index: 1;
+    /* Above sidebar bits like the DM search bar (z 2), below popouts/modals (z 1002). */
+    z-index: 100;
 }
 
 .vc-extraHomeTab-frame {
@@ -17,6 +18,67 @@
     height: 100%;
     border: 0;
     background-color: var(--background-primary);
+}
+
+.vc-extraHomeTab-server {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 72px;
+    margin-bottom: 8px;
+}
+
+.vc-extraHomeTab-server-pill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 4px;
+    height: 0;
+    border-radius: 0 4px 4px 0;
+    background: var(--interactive-active, #fff);
+    transform: translateY(-50%);
+    transition: height 0.15s ease;
+}
+
+.vc-extraHomeTab-server:hover .vc-extraHomeTab-server-pill {
+    height: 20px;
+}
+
+.vc-extraHomeTab-server-selected .vc-extraHomeTab-server-pill,
+.vc-extraHomeTab-server-selected:hover .vc-extraHomeTab-server-pill {
+    height: 40px;
+}
+
+.vc-extraHomeTab-server-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--background-secondary, #2b2d31);
+    cursor: pointer;
+    transition: border-radius 0.15s ease;
+}
+
+.vc-extraHomeTab-server:hover .vc-extraHomeTab-server-icon,
+.vc-extraHomeTab-server-selected .vc-extraHomeTab-server-icon {
+    border-radius: 12px;
+}
+
+.vc-extraHomeTab-server-icon img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+/* Home is the first item of the server list; hide its "selected" pill while Nighty is open. */
+.vc-extraHomeTab-server-active nav[aria-label] [class*="tutorialContainer_"]:first-child [class*="item_"][class*="selected_"] {
+    height: 0 !important;
+    opacity: 0;
 }
 
 .vc-extraHomeTab-icon {
