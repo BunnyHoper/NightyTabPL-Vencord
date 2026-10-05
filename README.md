@@ -18,9 +18,10 @@ Stop alt-tabbing between Discord and Nighty (it's a waste of time). **Nighty Tab
 
 *   **Home Sidebar Tab:** A native-looking **Nighty Tab** entry under Quests, with its own `/nighty` route.
 *   **Ready by Default:** Default URL is `http://127.0.0.1/` — works as soon as Nighty Web is on. Change it whenever you want.
-*   **Server Mode (optional):** Shows Nighty as a server icon at the top of the server list. Opens full width, like a whole server — only your user panel stays visible.
+*   **Server Mode (optional):** Shows Nighty as a server icon at the top of the server list. Opens full width, like a whole server, covering the DM column and the user panel.
 *   **Stays Loaded:** Leave the tab and the panel keeps running in the background — come back and it's exactly where you left it (no reload, no re-login). Toggle in settings.
 *   **Embed Unlocker:** Allows the page in Discord's CSP (`frame-src`) and strips `X-Frame-Options` / `frame-ancestors` only for the URL you set, so the panel isn't blocked.
+*   **Restart-Safe:** Restarting or reloading Discord while on the Nighty page sends you back to the app instead of Discord's 404 page.
 *   **Session Keeper:** Rewrites the panel's cookies so your Nighty Web login survives inside the embed.
 *   **Script Utils (optional):** Right-click a message with an attachment → **Download Script** sends `<prefix>dls` as a reply.
 

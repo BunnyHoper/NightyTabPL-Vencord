@@ -5,7 +5,7 @@
  */
 
 import { addResponseHeaderHook, CspPolicies } from "@main/csp";
-import { IpcMainInvokeEvent } from "electron";
+import { app, IpcMainInvokeEvent, session } from "electron";
 
 const MONTH_SECONDS = 60 * 60 * 24 * 30;
 const embedHosts = new Set<string>();
@@ -20,6 +20,35 @@ function allowFrameSrc(source: string) {
 
 for (const source of ["http://127.0.0.1:*", "http://localhost:*"])
     allowFrameSrc(source);
+
+// /nighty only exists client-side. When Discord reloads or restarts on it, the server
+// answers with a 404 page instead of the app, so send that load to /app instead.
+// Electron keeps one onBeforeRequest listener per session and discord_desktop_core
+// installs its own later, so wrap the setter to always merge ours with whatever it sets.
+const NIGHTY_PATTERNS = ["*://discord.com/nighty*", "*://*.discord.com/nighty*"];
+const NIGHTY_URL = /^https?:\/\/([\w-]+\.)?discord\.com\/nighty(?:[/?#]|$)/;
+
+type BeforeRequestListener = (details: Electron.OnBeforeRequestListenerDetails, cb: (response: Electron.CallbackResponse) => void) => void;
+
+void app.whenReady().then(() => {
+    const { webRequest } = session.defaultSession;
+    const setListener = webRequest.onBeforeRequest.bind(webRequest) as (filter: Electron.WebRequestFilter, listener: BeforeRequestListener) => void;
+
+    const install = (filter: Electron.WebRequestFilter | null, other: BeforeRequestListener | null) => {
+        setListener({ ...filter, urls: [...(filter?.urls ?? []), ...NIGHTY_PATTERNS] }, (details, cb) => {
+            if (NIGHTY_URL.test(details.url)) cb({ redirectURL: new URL("/app", details.url).href });
+            else if (other) other(details, cb);
+            else cb({});
+        });
+    };
+
+    webRequest.onBeforeRequest = ((filterOrListener: any, maybeListener?: any) => {
+        if (typeof filterOrListener === "function") install(null, filterOrListener);
+        else install(filterOrListener, maybeListener ?? null);
+    }) as typeof webRequest.onBeforeRequest;
+
+    install(null, null);
+});
 
 function hostOf(url: string) {
     try {

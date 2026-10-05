@@ -81,6 +81,11 @@
     opacity: 0;
 }
 
+/* The user panel (and players docked on it) spans under the server list too; hide it while Nighty is open. */
+.vc-extraHomeTab-server-active section[class*="panels_"] {
+    visibility: hidden;
+}
+
 .vc-extraHomeTab-icon {
     width: 20px;
     height: 20px;

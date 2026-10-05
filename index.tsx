@@ -242,31 +242,21 @@ const NightyPage = ErrorBoundary.wrap(function NightyPage() {
         const place = () => {
             const r = anchor.getBoundingClientRect();
             let { left } = r;
-            let clip = "";
 
-            // Server mode: also cover the DM column, leaving a hole for the user panel.
+            // Server mode: also cover the DM column and the user panel below it.
             if (settings.store.asServer) {
-                const content = anchor.parentElement?.parentElement;
-                const list = content?.querySelector("[class*='sidebarList_']");
+                const list = anchor.parentElement?.parentElement?.querySelector("[class*='sidebarList_']");
                 if (list) left = list.getBoundingClientRect().left;
-                const panel = content?.querySelector("section[class*='panels_']")?.getBoundingClientRect();
-                if (panel && panel.right > left) {
-                    const w = r.right - left, h = r.height;
-                    const x1 = Math.max(0, panel.left - left), x2 = panel.right - left;
-                    const y1 = panel.top - r.top, y2 = panel.bottom - r.top;
-                    clip = `path(evenodd, "M0 0H${w}V${h}H0Z M${x1} ${y1}H${x2}V${y2}H${x1}Z")`;
-                }
             }
 
             const width = r.right - left;
-            const next = `${r.top},${left},${width},${r.height},${clip}`;
+            const next = `${r.top},${left},${width},${r.height}`;
             if (next !== last) {
                 last = next;
                 layer.style.top = `${r.top}px`;
                 layer.style.left = `${left}px`;
                 layer.style.width = `${width}px`;
                 layer.style.height = `${r.height}px`;
-                layer.style.clipPath = clip;
             }
             raf = requestAnimationFrame(place);
         };
