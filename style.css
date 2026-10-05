@@ -5,6 +5,11 @@
     background-color: var(--background-primary);
 }
 
+.vc-extraHomeTab-keeper {
+    position: fixed;
+    z-index: 1;
+}
+
 .vc-extraHomeTab-frame {
     position: absolute;
     inset: 0;

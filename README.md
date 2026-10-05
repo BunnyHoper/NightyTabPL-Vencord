@@ -18,6 +18,7 @@ Stop alt-tabbing between Discord and Nighty (it's a waste of time). **Nighty Tab
 
 *   **Home Sidebar Tab:** A native-looking **Nighty Tab** entry under Quests, with its own `/nighty` route.
 *   **Ready by Default:** Default URL is `http://127.0.0.1/` — works as soon as Nighty Web is on. Change it whenever you want.
+*   **Stays Loaded:** Leave the tab and the panel keeps running in the background — come back and it's exactly where you left it (no reload, no re-login). Toggle in settings.
 *   **Embed Unlocker:** Allows the page in Discord's CSP (`frame-src`) and strips `X-Frame-Options` / `frame-ancestors` only for the URL you set, so the panel isn't blocked.
 *   **Session Keeper:** Rewrites the panel's cookies so your Nighty Web login survives inside the embed.
 *   **Script Utils (optional):** Right-click a message with an attachment → **Download Script** sends `<prefix>dls` as a reply.
@@ -71,6 +72,7 @@ Stop alt-tabbing between Discord and Nighty (it's a waste of time). **Nighty Tab
 | Setting | Default | Action |
 | :--- | :---: | :--- |
 | `Url` | `http://127.0.0.1/` | Page loaded in the tab. Any `http`/`https` URL. After changing it, press `Ctrl+R` once. |
+| `Keep loaded in background` | `on` | Keeps the page alive when you leave the tab. Off = it unloads and reloads on every visit. |
 | `Script Utils functions` | `off` | Shows **Download Script** on messages with attachments. |
 | `Nighty Prefix` | — | One character sent before `dls` (e.g. `.`). Only visible with Script Utils on. |
 

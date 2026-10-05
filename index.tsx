@@ -42,6 +42,15 @@ const settings = definePluginSettings({
             return "Use an http or https URL";
         }
     },
+    keepLoaded: {
+        type: OptionType.BOOLEAN,
+        description: "Keeps the Nighty page loaded in the background when you leave the tab.",
+        displayName: "Keep loaded in background",
+        default: true,
+        onChange(value: boolean) {
+            if (!value && keeper?.hidden) dropFrame();
+        }
+    },
     scriptUtils: {
         type: OptionType.BOOLEAN,
         description: "Shows Download Script when you right-click a message with an attachment.",
@@ -167,35 +176,90 @@ const messageContextMenuPatch: NavContextMenuPatchCallback = (children, { messag
     );
 };
 
+// The iframe lives in a fixed layer on <body>, not inside the route, so leaving the
+// tab only hides it. Moving an iframe in the DOM reloads it, so it is never re-parented.
+let keeper: HTMLDivElement | null = null;
+let frame: HTMLIFrameElement | null = null;
+let frameSrc: string | null = null;
+
+function getKeeper() {
+    if (!keeper) {
+        keeper = document.createElement("div");
+        keeper.className = cl("keeper");
+        keeper.hidden = true;
+        document.body.appendChild(keeper);
+    }
+    return keeper;
+}
+
+function loadFrame(src: string) {
+    if (frame && frameSrc === src) return;
+    frame?.remove();
+    frame = document.createElement("iframe");
+    frame.className = cl("frame");
+    frame.src = src;
+    frame.title = "Nighty";
+    frameSrc = src;
+    getKeeper().appendChild(frame);
+}
+
+function dropFrame() {
+    frame?.remove();
+    frame = null;
+    frameSrc = null;
+}
+
+function destroyKeeper() {
+    dropFrame();
+    keeper?.remove();
+    keeper = null;
+}
+
 const NightyPage = ErrorBoundary.wrap(function NightyPage() {
     const { url } = settings.use(["url"]);
     const src = pageUrl(url);
-    const hostRef = useRef<HTMLDivElement | null>(null);
+    const anchorRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        const host = hostRef.current;
-        if (!host || src === null) return;
+        const anchor = anchorRef.current;
+        if (!anchor || src === null) return;
 
+        const layer = getKeeper();
         let cancelled = false;
-        let frame: HTMLIFrameElement | undefined;
+        let raf = 0;
+        let last = "";
+
+        // Follows the anchor every frame: sidebar/window changes move it without resizing it.
+        const place = () => {
+            const r = anchor.getBoundingClientRect();
+            const next = `${r.top},${r.left},${r.width},${r.height}`;
+            if (next !== last) {
+                last = next;
+                layer.style.top = `${r.top}px`;
+                layer.style.left = `${r.left}px`;
+                layer.style.width = `${r.width}px`;
+                layer.style.height = `${r.height}px`;
+            }
+            raf = requestAnimationFrame(place);
+        };
 
         void (async () => {
             if (Native) await Native.allowEmbed(src);
             if (cancelled) return;
-            frame = document.createElement("iframe");
-            frame.className = cl("frame");
-            frame.src = src;
-            frame.title = "Nighty";
-            host.replaceChildren(frame);
+            loadFrame(src);
+            place();
+            layer.hidden = false;
         })();
 
         return () => {
             cancelled = true;
-            frame?.remove();
+            cancelAnimationFrame(raf);
+            layer.hidden = true;
+            if (!settings.store.keepLoaded) dropFrame();
         };
     }, [src]);
 
-    return <div className={cl("page")} ref={hostRef} />;
+    return <div className={cl("page")} ref={anchorRef} />;
 }, { noop: true });
 
 const NightyTab = ErrorBoundary.wrap(function NightyTab() {
@@ -247,6 +311,10 @@ export default definePlugin({
     start() {
         const src = pageUrl(settings.store.url);
         if (Native && src !== null) void Native.allowEmbed(src);
+    },
+
+    stop() {
+        destroyKeeper();
     },
 
     patches: [
