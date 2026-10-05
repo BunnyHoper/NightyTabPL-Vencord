@@ -5,6 +5,7 @@
  */
 
 import { addResponseHeaderHook, CspPolicies } from "@main/csp";
+import { RendererSettings } from "@main/settings";
 import { app, IpcMainInvokeEvent, session } from "electron";
 
 const MONTH_SECONDS = 60 * 60 * 24 * 30;
@@ -12,7 +13,7 @@ const embedHosts = new Set<string>();
 let headerHooked = false;
 
 // Discord's CSP has no frame-src for local hosts, so the iframe gets blocked.
-// Applied to the main frame on load: a custom URL needs one Ctrl+R after it is set.
+// Applied to the main frame on load: a new URL needs one Ctrl+R after it is set.
 function allowFrameSrc(source: string) {
     const directives = CspPolicies[source] ?? [];
     if (!directives.includes("frame-src")) CspPolicies[source] = [...directives, "frame-src"];
@@ -99,7 +100,7 @@ function hookHeaders() {
     });
 }
 
-export function allowEmbed(_event: IpcMainInvokeEvent, url: string) {
+function permitEmbed(url: string) {
     const host = hostOf(url);
     if (host !== "") {
         embedHosts.add(host);
@@ -107,3 +108,16 @@ export function allowEmbed(_event: IpcMainInvokeEvent, url: string) {
     }
     hookHeaders();
 }
+
+export function allowEmbed(_event: IpcMainInvokeEvent, url: string) {
+    permitEmbed(url);
+}
+
+// The CSP is patched when the main frame loads, before the renderer can ask for anything,
+// so apply the saved URLs right away: no extra Ctrl+R after a Discord restart.
+// Changing the URL in settings still needs one Ctrl+R, but no more than one.
+const SETTINGS_PATH = "plugins.Nighty Tab";
+const saved = RendererSettings.store.plugins?.["Nighty Tab"];
+permitEmbed(saved?.url || "http://127.0.0.1/");
+
+RendererSettings.addChangeListener(`${SETTINGS_PATH}.url`, (value: string) => value && permitEmbed(value));

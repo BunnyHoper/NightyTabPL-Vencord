@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Vencord, a Discord client mod
  * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -25,6 +25,16 @@ const Native = IS_DISCORD_DESKTOP
 
 const NIGHTY_ROUTE = "/nighty";
 const NIGHTY_ITEM_ID = "nighty";
+
+function urlOrEmpty(value: string) {
+    const trimmed = value.trim();
+    if (trimmed === "") return true;
+    try {
+        const url = new URL(trimmed);
+        if (url.protocol === "https:" || url.protocol === "http:") return true;
+    } catch { /* invalid URL */ }
+    return "Use an http or https URL";
+}
 const cl = classNameFactory("vc-extraHomeTab-");
 // On <body> while the Nighty page is open in server mode: un-highlights Discord's Home icon.
 const ACTIVE_SERVER_CLASS = cl("server-active");
@@ -35,15 +45,7 @@ const settings = definePluginSettings({
         description: "URL the Nighty tab opens in the page beside the home sidebar.",
         placeholder: "http://127.0.0.1/",
         default: "http://127.0.0.1/",
-        isValid(value: string) {
-            const trimmed = value.trim();
-            if (trimmed === "") return true;
-            try {
-                const url = new URL(trimmed);
-                if (url.protocol === "https:" || url.protocol === "http:") return true;
-            } catch { /* invalid URL */ }
-            return "Use an http or https URL";
-        }
+        isValid: urlOrEmpty
     },
     asServer: {
         type: OptionType.BOOLEAN,
@@ -53,7 +55,7 @@ const settings = definePluginSettings({
     },
     keepLoaded: {
         type: OptionType.BOOLEAN,
-        description: "Keeps the Nighty page loaded in the background when you leave the tab.",
+        description: "Keeps the Nighty page loaded in the background when you leave it.",
         displayName: "Keep loaded in background",
         default: true,
         onChange(value: boolean) {
@@ -186,10 +188,13 @@ const messageContextMenuPatch: NavContextMenuPatchCallback = (children, { messag
 };
 
 // The iframe lives in a fixed layer on <body>, not inside the route, so leaving the
-// tab only hides it. Moving an iframe in the DOM reloads it, so it is never re-parented.
+// page only hides it. Moving an iframe in the DOM reloads it, so it is never re-parented.
 let keeper: HTMLDivElement | null = null;
-let frame: HTMLIFrameElement | null = null;
-let frameSrc: string | null = null;
+let frame: { el: HTMLIFrameElement; src: string; } | null = null;
+
+function onNightyRoute(pathname: string) {
+    return pathname === NIGHTY_ROUTE || pathname.startsWith(NIGHTY_ROUTE + "/");
+}
 
 function getKeeper() {
     if (!keeper) {
@@ -201,21 +206,20 @@ function getKeeper() {
     return keeper;
 }
 
-function loadFrame(src: string) {
-    if (frame && frameSrc === src) return;
-    frame?.remove();
-    frame = document.createElement("iframe");
-    frame.className = cl("frame");
-    frame.src = src;
-    frame.title = "Nighty";
-    frameSrc = src;
-    getKeeper().appendChild(frame);
+function showFrame(src: string) {
+    if (frame?.src === src) return;
+    frame?.el.remove();
+    const el = document.createElement("iframe");
+    el.className = cl("frame");
+    el.src = src;
+    el.title = "Nighty";
+    frame = { el, src };
+    getKeeper().appendChild(el);
 }
 
 function dropFrame() {
-    frame?.remove();
+    frame?.el.remove();
     frame = null;
-    frameSrc = null;
 }
 
 function destroyKeeper() {
@@ -264,7 +268,7 @@ const NightyPage = ErrorBoundary.wrap(function NightyPage() {
         void (async () => {
             if (Native) await Native.allowEmbed(src);
             if (cancelled) return;
-            loadFrame(src);
+            showFrame(src);
             place();
             layer.hidden = false;
             document.body.classList.toggle(ACTIVE_SERVER_CLASS, settings.store.asServer);
@@ -284,12 +288,12 @@ const NightyPage = ErrorBoundary.wrap(function NightyPage() {
 
 // Discord's router doesn't re-render these items on navigation, so poll the path.
 function useOnNightyRoute() {
-    const check = () => window.location.pathname.startsWith(NIGHTY_ROUTE);
+    const check = () => onNightyRoute(window.location.pathname);
     const [active, setActive] = useState(check);
 
     useEffect(() => {
-        const id = setInterval(() => setActive(check()), 250);
-        return () => clearInterval(id);
+        const timer = setInterval(() => setActive(check()), 250);
+        return () => clearInterval(timer);
     }, []);
 
     return active;
@@ -343,11 +347,9 @@ export default definePlugin({
     name: "Nighty Tab",
     description: "Adds a Nighty tab on the home sidebar.",
     authors: [
-        {
-            name: "Mime | N0_.q3",
-            id: 123456789012345678n
-        }
-	],
+        { name: "Mimiez", id: 0n },
+        { name: "BunnyHoper", id: 0n }
+    ],
     enabledByDefault: true,
     dependencies: ["MessagePopoverAPI", "ServerListAPI"],
     settings,
@@ -383,10 +385,11 @@ export default definePlugin({
 
     patches: [
         {
+            // Right after Quests (not before the divider), so tabs other plugins add before the divider stay below Nighty.
             find: '"section-divider-top"',
             replacement: {
-                match: /\(0,\i\.jsx\)\(\i,\{\},"section-divider-top"\)/,
-                replace: "$self.renderExtraTab(),$&"
+                match: /\(0,\i\.jsx\)\(\i,\{selected:\i\.startsWith\(\i\.\i\.QUEST_HOME\)\},"quests"\)/,
+                replace: "$&,$self.renderExtraTab()"
             }
         },
         {

@@ -93,6 +93,20 @@ Stop alt-tabbing between Discord and Nighty (it's a waste of time). **Nighty Tab
 
 ---
 
+## 🧩 ᴡᴀɴᴛ ᴍᴏʀᴇ ᴘᴀɢᴇѕ?
+
+Need your own pages next to Nighty (a bot panel, a dashboard, any website)? Use **[CustomPagesPL-Vencord](https://github.com/BunnyHoper/CustomPagesPL-Vencord)** — a standalone plugin that adds as many pages as you want, with their own URL and logo. Works side by side with Nighty Tab, which always stays on top.
+
+---
+
+## 💖 ᴄʀᴇᴅɪᴛѕ
+
+<a href="https://github.com/mimiez"><img src="assets/mimiez.png" width="96" height="96" alt="Mimiez" /></a>
+
+Huge thanks to **[Mimiez](https://github.com/mimiez)** (Mime | N0_.q3) — the original author of the Nighty Tab plugin this fork is built on. 🙏
+
+---
+
 ## 🤝 ᴄᴏɴᴛʀɪʙᴜᴛɪᴏɴ ᴀɴᴅ ѕᴜᴘᴘᴏʀᴛ
 
 Contributions are welcome. If you find a bug or the tab stops loading after a Discord update:
